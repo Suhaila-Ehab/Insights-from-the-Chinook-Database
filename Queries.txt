@@ -1,0 +1,67 @@
+-- Q1- Rock Music Sales over Time
+SELECT STRFTIME('%Y',i.InvoiceDate) as Year, g.name, COUNT(i.InvoiceId) as Sales
+FROM Invoice i
+JOIN InvoiceLine il
+ON i.InvoiceId = il.InvoiceId
+JOIN track t
+ON t.TrackId = il.TrackId
+JOIN Genre g
+ON t.GenreId = g.GenreId
+WHERE g.Name = 'Rock'
+GROUP BY 1,2 
+-- Q2- Most commonly purchased media form
+SELECT Name as MediaType, Count(InvoiceId)
+FROM(SELECT i.InvoiceId, m.Name
+	FROM MediaType m 
+	JOIN Track t
+	ON t.MediaTypeId = m.MediaTypeId
+	JOIN InvoiceLine il
+	ON il.TrackId = t.TrackId
+	JOIN Invoice i
+	ON i.InvoiceId = il.InvoiceId
+	GROUP BY i.InvoiceId)
+GROUP BY 1
+-- Q3- Most Popular Artist in each genre
+WITH T1 AS (SELECT g.name as Genre, a.Name as Artist_Name, i.InvoiceId
+FROM invoice i
+JOIN InvoiceLine il
+ON i.InvoiceId = il.InvoiceId
+JOIN track t
+ON t.TrackId = il.TrackId
+JOIN Album aa
+ON t.AlbumId = aa.AlbumId
+JOIN Artist a
+ON aa.ArtistId = a.ArtistId
+JOIN Genre g
+ON t.GenreId = g.GenreId
+GROUP BY i.InvoiceId),
+
+t2 AS (SELECT Genre, Artist_Name, COUNT(InvoiceID) AS Purchases
+FROM t1
+GROUP BY 1,2)
+
+SELECT Genre, Artist_Name, max(Purchases) as Purchases
+FROM t2
+GROUP BY 1
+ORDER BY 3 DESC
+LIMIT 12;
+-- Q4- Most Popular Genre in Each Country 
+WITH t1 AS (SELECT g.*,c.Country, COUNT(i.InvoiceId) as Purchases
+	FROM Invoice i
+	JOIN InvoiceLine il
+	ON i.InvoiceId = il.InvoiceId
+	JOIN track t
+	ON t.TrackId = il.TrackId
+	JOIN Genre g
+	ON t.GenreId=g.GenreId
+	JOIN customer c
+	ON c.CustomerId = i.CustomerId
+	GROUP BY 1,2,3
+	ORDER BY 4 DESC)
+SELECT t1.* 
+FROM t1
+JOIN (SELECT max(Purchases) as Purchases, GenreId,Name,Country
+	  FROM t1
+	  GROUP BY Country) t2
+on t1.Country = t2.Country	
+WHERE t1.Purchases = t2.Purchases  
